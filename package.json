@@ -1,23 +1,18 @@
 {
-  "name": "search-node-modules",
+  "name": "@chen86860/search-node-modules",
   "displayName": "Search node_modules",
-  "description": "Quickly search the node_modules folder.",
+  "description": "Quickly search node_modules",
   "license": "MIT",
   "version": "1.0.0",
   "publisher": "chen86860",
-  "engines": {
-    "vscode": "^1.42.0"
-  },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onCommand:extension.search"
-  ],
   "main": "./build/extension.js",
   "files": [
     "build"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chen86860/vscode-search-node-modules"
+  },
   "scripts": {
     "vscode:prepublish": "yarn run build",
     "build": "rm -rf build && tsc -p ./",
@@ -44,13 +39,19 @@
     "typescript": "^4.5.5",
     "vsce": "^2.6.7"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/chen86860/vscode-search-node-modules"
-  },
-  "icon": "img/npm-logo.png",
+ 
   "pre-commit": [
     "lint"
+  ],
+  "icon": "img/nodejs-logo.png",
+  "engines": {
+    "vscode": "^1.42.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:extension.search"
   ],
   "contributes": {
     "commands": [

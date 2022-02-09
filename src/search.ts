@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+// eslint-disable-next-line import/no-unresolved
 import * as vscode from "vscode";
 import findChildPackages from "./utils/find-child-packages";
 import findParentModules from "./utils/find-parent-modules";
