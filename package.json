@@ -3,7 +3,7 @@
   "displayName": "Search Node Modules",
   "description": "Quickly search node_modules",
   "license": "MIT",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "publisher": "chen86860",
   "main": "./build/extension.js",
   "files": [
