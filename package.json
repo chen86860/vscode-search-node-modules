@@ -1,6 +1,6 @@
 {
-  "name": "search-node-modules",
-  "displayName": "Search node_modules",
+  "name": "search-node-modules-quickly",
+  "displayName": "Search Node Modules",
   "description": "Quickly search node_modules",
   "license": "MIT",
   "version": "1.0.4",
