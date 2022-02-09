@@ -1,5 +1,5 @@
 {
-  "name": "@chen86860/search-node-modules",
+  "name": "search-node-modules",
   "displayName": "Search node_modules",
   "description": "Quickly search node_modules",
   "license": "MIT",
