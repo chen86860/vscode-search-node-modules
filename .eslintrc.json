@@ -1,0 +1,30 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint"],
+  "extends": ["plugin:import/recommended", "plugin:import/typescript"],
+  "rules": {
+    "@typescript-eslint/semi": "off",
+    "eqeqeq": "warn",
+    "no-throw-literal": "warn",
+    "semi": "off",
+    "curly": "off",
+    "no-unused-vars": "error",
+    "import/order": [
+      "error",
+      {
+        "pathGroups": [
+          {
+            "pattern": "@/**",
+            "group": "parent"
+          }
+        ],
+        "groups": ["builtin", "external", "parent", "sibling", "index"]
+      }
+    ]
+  }
+}
