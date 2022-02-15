@@ -1,37 +1,18 @@
-import * as fs from "fs";
-import * as path from "path";
+import path from "path";
+import { sync } from "glob";
 
-// Looks for node_modules in parent folders of the workspace recursively.
-// Returns a list of paths relative to workspaceRoot/nodeModulesPath
-const findParentModules = async (
-  workspaceRoot: string,
-  nodeModulesPath: string
-) => {
-  const rootDirectoryPath = path.parse(process.cwd()).root.toLowerCase();
-  const absoluteRootNodeModules = path.join(rootDirectoryPath, nodeModulesPath);
+// Looks for node_modules in child folders of the workspace recursively. Max depth is 3.
+const findChildrenModules = async (workspaceRoot: string) => {
+  console.log({ workspaceRoot });
+  const files = sync("**/node_modules", {
+    ignore: "node_modules/**",
+    cwd: workspaceRoot,
+  });
 
-  const find = async (dir: string): Promise<any> => {
-    const ret = [];
-    if (await fs.existsSync(dir)) {
-      const getFilePath = (file: string) =>
-        path.relative(
-          path.join(workspaceRoot, nodeModulesPath),
-          path.join(dir, file)
-        );
-
-      const dirFiles = await fs.readdirSync(dir);
-      ret.push(...dirFiles.map(getFilePath));
-    }
-
-    if (dir !== absoluteRootNodeModules) {
-      const parent = path.join(dir, "..", "..", nodeModulesPath);
-      ret.push(...(await find(parent)));
-    }
-
-    return ret;
-  };
-
-  return find(path.join(workspaceRoot, "..", nodeModulesPath));
+  const pattern = /node_modules.*node_modules/i;
+  return files
+    .filter((file) => !file.match(pattern))
+    .map((files) => path.join(workspaceRoot, files));
 };
 
-export default findParentModules;
+export default findChildrenModules;

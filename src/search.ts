@@ -3,66 +3,31 @@ import * as path from "path";
 // eslint-disable-next-line import/no-unresolved
 import * as vscode from "vscode";
 import findChildPackages from "./utils/find-child-packages";
-import findParentModules from "./utils/find-parent-modules";
-import { showError } from "./utils";
+import findChildrenModules from "./utils/find-parent-modules";
 import sortFiles from "./utils/sort-files";
+import { showError } from "./utils";
 
-let lastFolder = "";
-let lastWorkspaceName = "";
-let lastWorkspaceRoot = "";
-
-const nodeModules = "node_modules";
+const NODE_MODULES_PATHNAME = "node_modules";
 
 const preferences = vscode.workspace.getConfiguration("search-node-modules");
 
-const useLastFolder = preferences.get("useLastFolder", false);
-const nodeModulesPath = preferences.get("path", nodeModules);
-const searchParentModules = preferences.get("searchParentModules", true);
+const nodeModulesPath = preferences.get("path", NODE_MODULES_PATHNAME);
+const searchChildrenModules = preferences.get("searchChildrenModules", true);
 const orderPriority = preferences.get("orderPriority", []);
 
-const searchPath = (
-  workspaceName: string,
-  workspaceRoot: string,
-  folderPath: string
-) => {
-  // Path to node_modules in this workspace folder
-  const workspaceNodeModules = path.join(workspaceName, nodeModulesPath);
-
-  // Reset last folder
-  lastFolder = "";
-  lastWorkspaceName = "";
-  lastWorkspaceRoot = "";
-
-  // Path to current folder
-  const folderFullPath = path.join(workspaceRoot, folderPath);
-
-  // Read folder, built quick pick with files/folder (and shortcuts)
+const getSearchPaths = (folderFullPath: string) => {
   fs.readdir(folderFullPath, async (readErr, files) => {
     if (readErr) {
       if (folderPath === nodeModulesPath) {
         return showError("No node_modules folder in this workspace.");
       }
-
       return showError(`Unable to open folder ${folderPath}`);
     }
-
-    const isParentFolder = folderPath.includes("..");
     const options = sortFiles(files, orderPriority);
-
-    // If searching in root node_modules, also include modules from parent folders, that are outside of the workspace
-    if (folderPath === nodeModulesPath) {
-      if (searchParentModules) {
-        const parentModules = await findParentModules(
-          workspaceRoot,
-          nodeModulesPath
-        );
-        options.push(...parentModules);
-      }
-    } else {
-      // If current folder is not outside of the workspace, also add option to move a step back
-      if (!isParentFolder) {
-        options.push({ label: `$(reply) ..`, path: ".." });
-      }
+    const isParentFolder = folderPath.includes("..");
+    // If current folder is not outside of the workspace, also add option to move a step back
+    if (!isParentFolder) {
+      options.push({ label: `$(reply) ..`, path: ".." });
     }
 
     // TODO file icon
@@ -72,50 +37,97 @@ const searchPath = (
         fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()
           ? "folder"
           : "file";
-
       return {
         label: option?.label || `$(${icon}) ${option}`,
         path: option?.path || option,
       };
     });
 
-    vscode.window
-      .showQuickPick(listOptions, {
+    return listOptions;
+  });
+};
+
+const searchPath = (
+  workspaceName: string,
+  workspaceRoot: string,
+  folderPath: string
+) => {
+  try {
+    // Path to node_modules in this workspace folder
+    const workspaceNodeModules = path.join(workspaceName, nodeModulesPath);
+
+    // Path to current folder
+    const folderFullPath = path.join(workspaceRoot, folderPath);
+
+    // Read folder, built quick pick with files/folder (and shortcuts)
+    fs.readdir(folderFullPath, async (readErr, files) => {
+      const isParentFolder = folderPath.includes("..");
+      const options = sortFiles(files, orderPriority);
+
+      // If searching in root node_modules, also include modules from parent folders, that are outside of the workspace
+      if (folderPath === nodeModulesPath) {
+        if (searchChildrenModules) {
+          const parentModules = await findChildrenModules(workspaceRoot);
+          options.push(...parentModules);
+        }
+      } else {
+        // If current folder is not outside of the workspace, also add option to move a step back
+        if (!isParentFolder) {
+          options.push({ label: `$(reply) ..`, path: ".." });
+        }
+      }
+
+      // TODO file icon
+      const listOptions: vscode.QuickPickItem[] = options.map((option) => {
+        const filePath = path.join(folderFullPath, option?.path || option);
+        const icon =
+          fs.existsSync(filePath) && fs.lstatSync(filePath).isDirectory()
+            ? "folder"
+            : "file";
+
+        return {
+          label: option?.label || `$(${icon}) ${option}`,
+          path: option?.path || option,
+        };
+      });
+
+      const selected = await vscode.window.showQuickPick(listOptions, {
         placeHolder: path.format({
           dir: workspaceName,
           base: folderPath,
         }),
-      })
-      .then((selected) => {
-        if (!selected) return;
-        // @ts-ignore
-        const selectPath = selected?.path || "";
-
-        // node_modules shortcut selected
-        if (selectPath === workspaceNodeModules) {
-          searchPath(workspaceName, workspaceRoot, nodeModulesPath);
-        } else {
-          const selectedPath = path.join(folderPath, selectPath);
-          const selectedFullPath = path.join(workspaceRoot, selectedPath);
-
-          // If selected is a folder, traverse it,
-          // otherwise open file.
-          fs.stat(selectedFullPath, (statErr, stats) => {
-            if (stats.isDirectory()) {
-              searchPath(workspaceName, workspaceRoot, selectedPath);
-            } else {
-              lastWorkspaceName = workspaceName;
-              lastWorkspaceRoot = workspaceRoot;
-              lastFolder = folderPath;
-
-              vscode.workspace
-                .openTextDocument(selectedFullPath)
-                .then(vscode.window.showTextDocument);
-            }
-          });
-        }
       });
-  });
+      if (!selected) return;
+
+      // @ts-ignore
+      const selectPath = selected?.path || "";
+      if (selectPath === workspaceNodeModules) {
+        searchPath(workspaceName, workspaceRoot, nodeModulesPath);
+      } else {
+        const selectedPath = path.join(folderPath, selectPath);
+        const selectedFullPath = path.join(workspaceRoot, selectedPath);
+
+        // If selected is a folder, traverse it,
+        // otherwise open file.
+        fs.stat(selectedFullPath, (statErr, stats) => {
+          if (stats.isDirectory()) {
+            searchPath(workspaceName, workspaceRoot, selectedPath);
+          } else {
+            vscode.workspace
+              .openTextDocument(selectedFullPath)
+              .then(vscode.window.showTextDocument);
+          }
+        });
+      }
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      showError(error.message);
+      return;
+    }
+
+    showError("Error in files searching...");
+  }
 };
 
 const getProjectFolder = async (workspaceFolder: vscode.WorkspaceFolder) => {
@@ -183,11 +195,6 @@ const getWorkspaceFolder = async () => {
 };
 
 const searchNodeModules = () => {
-  // Open last folder if there is one
-  if (useLastFolder && lastFolder) {
-    return searchPath(lastWorkspaceName, lastWorkspaceRoot, lastFolder);
-  }
-
   getWorkspaceFolder()
     .then((folder) => folder && getProjectFolder(folder))
     .then((folder) => {

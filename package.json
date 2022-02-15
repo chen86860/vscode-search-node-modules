@@ -14,10 +14,9 @@
     "url": "https://github.com/chen86860/vscode-search-node-modules"
   },
   "scripts": {
-    "vscode:prepublish": "yarn run build",
+    "start": "tsc -watch -p ./",
     "build": "rm -rf build && tsc -p ./",
-    "lint": "eslint src --ext ts",
-    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "yarn run build",
     "deploy": "vsce publish --yarn",
     "package": "vsce package --yarn",
     "prepare": "husky install"
@@ -80,10 +79,10 @@
           "default": "node_modules",
           "description": "Relative path to node_modules folder."
         },
-        "search-node-modules.searchParentModules": {
+        "search-node-modules.searchChildrenModules": {
           "type": "boolean",
           "default": true,
-          "description": "Include modules from parent folders in search results."
+          "description": "Include modules from children folders in search results."
         },
         "search-node-modules.orderPriority": {
           "type": "array",
